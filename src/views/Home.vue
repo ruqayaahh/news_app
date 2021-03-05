@@ -61,7 +61,6 @@
 
 <script>
 // @ is an alias to /src
-import axios from "axios";
 import ReadLater from "../components/ReadLater.vue";
 
 export default {
@@ -78,8 +77,8 @@ export default {
     return {
       allHeadlines: [],
       isLoading: true,
-      apiKey: "660b6336f9f0457c92fa713f12496141",
-      apiURL: "https://newsapi.org/v2/top-headlines",
+      // apiKey: "660b6336f9f0457c92fa713f12496141",
+      // apiURL: "https://newsapi.org/v2/top-headlines",
       categories: [
         "all",
         "business",
@@ -99,24 +98,24 @@ export default {
     $route: {
       deep: true,
       handler: function (val) {
-        const { category } = value.query;
+        const { category } = val.query;
         this.fetchNewsByCategory(category);
       },
     },
   },
   mounted() {
-    const { apiURL, apiKey, $route } = this;
+    const { $route } = this;
     const { category } = $route.query;
-    axios
+    this.$axios
       .get(
-        `${apiURL}?country=us&apiKey=${apiKey}&category=${category ? category : ''}`
+        `/top-headlines?country=us&category=${category ? category : ''}`
       )
       .then(({ data }) => {
         const { articles } = data;
         this.allHeadlines = articles;
       })
       .catch((error) => {
-        alert(error);
+        alert(error.response.data.message);
       })
       .finally(() => {
         this.isLoading = false;
@@ -125,11 +124,10 @@ export default {
 
   methods: {
     fetchNewsByCategory(cat) {
-      const { apiURL, apiKey } = this;
       this.isLoading = true;
-      axios
+      this.$axios
         .get(
-          `${apiURL}?country=us&apiKey=${apiKey}&category=${
+          `/top-headlines?country=us&category=${
             cat !== "all" ? cat : ""
           }`
         )
@@ -138,17 +136,16 @@ export default {
           this.allHeadlines = articles;
         })
         .catch((error) => {
-          console.log(error);
+          alert(error.response.data.message);
         })
         .finally(() => {
           this.isLoading = false;
         });
     },
     fetchNewsByQuery(que) {
-      const { apiURL, apiKey } = this;
       this.isLoading = "true";
-      axios
-        .get(`${apiURL}?country=us&apiKey=${apiKey}?q=${que}`)
+      this.$axios
+        .get(`/top-headlines?country=us&?q=${que}`)
         .then(({ data }) => {
           const { articles } = data;
           this.allHeadlines = articles;
@@ -164,8 +161,8 @@ export default {
     fetchNewsBySearch(find) {
       const { apiURL, apiKey } = this;
       this.isLoading = "true";
-      axios
-        .get(`${apiURL}?country=us&apiKey=${apiKey}`)
+      this.$axios
+        .get(`/top-headlines?country=us`)
         .then(({ data }) => {
           const { articles } = data;
           this.allHeadlines = articles;

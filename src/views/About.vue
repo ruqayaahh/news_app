@@ -7,7 +7,7 @@
 <script>
 export default {
   mounted() {
-      this.$axios.get('/top-headlines').then(res => console.log(res)).catch(error => console.log(error))  
+      this.$axios.get('/top-headlines').then(res => console.log(res).catch(error => alert(error.response.data.message))  );
   }
 }
 </script>
