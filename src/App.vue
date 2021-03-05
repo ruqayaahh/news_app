@@ -10,4 +10,10 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+.btn_and_search {
+  display: flex;
+  justify-content: space-between;
+  flex-flow: row nowrap;
+}
 </style>

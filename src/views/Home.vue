@@ -1,14 +1,43 @@
 <template>
   <div>
-  <h1>Top Headlines</h1>
-  <nav class="nav">
-    <ul class="nav_menu">
-      <li v-for="(category, index) in categories" :key="index" @click="fetchNewsByCategory(category)">{{ category }}</li>
-    </ul>
-  </nav>
-    <div class="home">
+    <div>
+      <div style="text-align: center">
+        <h1>Welcome to Sheebooker NG News Blog</h1>
+        <h2>Top Headlines</h2>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="btn_and_search">
+        <div>
+          <button :showLibrary="showLibrary">My Library</button>
+        </div>
+        <div>
+          <form action="" @submit.prevent="fetchNewsBySearch(search)">
+            <input type="text" v-model="search" :search="search" />
+            <button>Search</button>
+          </form>
+        </div>
+      </div>
+      <div>
+        <ul class="nav_menu">
+          <li
+            v-for="(category, index) in categories"
+            :key="index"
+            @click="fetchNewsByCategory(category)"
+          >
+            <router-link :to="`/?category=${category}`">
+              {{ category }}
+            </router-link>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <div v-if="showLibrary">
+      <ReadLater :library="library" />
+    </div>
+    <div class="main" v-if="!showLibrary">
       <h1 v-if="isLoading">Loading...</h1>
-      <div class="posts" v-else>
+      <div class="posts" v-else-if="allHeadlines.length">
         <div
           class="post__single"
           v-for="(headline, index) in allHeadlines"
@@ -20,7 +49,11 @@
           <h3>{{ headline.title }}</h3>
           <p v-html="headline.content"></p>
           <small>source: {{ headline.source.name }}</small>
+          <button>Add to Read Later</button>
         </div>
+      </div>
+      <div class="posts" v-else>
+        <h2>No news for this category</h2>
       </div>
     </div>
   </div>
@@ -29,16 +62,14 @@
 <script>
 // @ is an alias to /src
 import axios from "axios";
+import ReadLater from "../components/ReadLater.vue";
+
 export default {
   name: "Home",
-  components: {},
+  components: {
+    ReadLater,
+  },
   //   build a news app that does the following
-  // 1. On the landing page, the user should see top headlines of news
-  // *Info should contain
-  // -News Headline
-  // -Snippet of the news
-  // -Source
-  // 2. User should be able to view top headlines of categories like: business, entertainment, general, health, science, sports, technology
   // 3. Users should be able to search news any other category they want,
   // 4. User should be able to view news by several news source
   // 5. Users should be able to add particular news to a read later list that should be persisted on their browser localstorage
@@ -59,18 +90,33 @@ export default {
         "sports",
         "technology",
       ],
+      showLibrary: false,
+      library: [],
+      search: null,
     };
   },
+  watch: {
+    $route: {
+      deep: true,
+      handler: function (val) {
+        const { category } = value.query;
+        this.fetchNewsByCategory(category);
+      },
+    },
+  },
   mounted() {
-    const { apiURL, apiKey } = this;
+    const { apiURL, apiKey, $route } = this;
+    const { category } = $route.query;
     axios
-      .get(`${apiURL}?country=us&apiKey=${apiKey}`)
+      .get(
+        `${apiURL}?country=us&apiKey=${apiKey}&category=${category ? category : ''}`
+      )
       .then(({ data }) => {
         const { articles } = data;
         this.allHeadlines = articles;
       })
       .catch((error) => {
-        console.log(error);
+        alert(error);
       })
       .finally(() => {
         this.isLoading = false;
@@ -82,7 +128,11 @@ export default {
       const { apiURL, apiKey } = this;
       this.isLoading = true;
       axios
-        .get(`${apiURL}?country=us&apiKey=${apiKey}&category=${cat !== 'all' ? cat : ''}`)
+        .get(
+          `${apiURL}?country=us&apiKey=${apiKey}&category=${
+            cat !== "all" ? cat : ""
+          }`
+        )
         .then(({ data }) => {
           const { articles } = data;
           this.allHeadlines = articles;
@@ -94,12 +144,53 @@ export default {
           this.isLoading = false;
         });
     },
+    fetchNewsByQuery(que) {
+      const { apiURL, apiKey } = this;
+      this.isLoading = "true";
+      axios
+        .get(`${apiURL}?country=us&apiKey=${apiKey}?q=${que}`)
+        .then(({ data }) => {
+          const { articles } = data;
+          this.allHeadlines = articles;
+        })
+        .catch((error) => {
+          alert(error);
+        })
+        .finally(() => {
+          this.isLoading = "false";
+        });
+    },
+
+    fetchNewsBySearch(find) {
+      const { apiURL, apiKey } = this;
+      this.isLoading = "true";
+      axios
+        .get(`${apiURL}?country=us&apiKey=${apiKey}`)
+        .then(({ data }) => {
+          const { articles } = data;
+          this.allHeadlines = articles;
+          return this.allHeadlines.filter((item) => {
+            return this.search
+              .toLowerCase()
+              .split(" ")
+              .every((find) => {
+                item.author.toLowerCase().includes(find);
+              });
+          });
+        })
+        .catch((error) => {
+          alert(error);
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
   },
 };
 </script>
 
 <style scoped>
-.home {
+.main {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
@@ -133,14 +224,14 @@ nav {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
-  border-top: 2px solid black;
-  border-bottom: 2px solid black;
 }
 .nav_menu {
   list-style: none;
   display: flex;
+  padding: 20px;
   justify-content: space-between;
+  border-top: 2px solid black;
+  border-bottom: 2px solid black;
 }
 .nav_menu li {
   padding: 0 10px;
